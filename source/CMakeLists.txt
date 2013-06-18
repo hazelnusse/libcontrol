@@ -10,3 +10,7 @@ if (LIBCONTROL_BUILD_TESTS)
   add_subdirectory(tests)
 endif()
 
+install(TARGETS control
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
+

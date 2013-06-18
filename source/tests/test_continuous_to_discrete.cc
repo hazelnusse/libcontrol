@@ -18,7 +18,7 @@ TEST(DiscretizeTest, Simple)
   Bd_expected << 0.005025083542084, -0.005025083542084,
                  0.005025083542084, -0.005025083542084;
 
-  EXPECT_TRUE(sys_discrete.first.isApprox(Ad_expected))
-  EXPECT_TRUE(sys_discrete.second.isApprox(Bd_expected))
+  EXPECT_TRUE(sys_discrete.first.isApprox(Ad_expected));
+  EXPECT_TRUE(sys_discrete.second.isApprox(Bd_expected));
 }
 

@@ -5,7 +5,6 @@ set(CMAKE_MODULE_PATH ${LIBCONTROL_SOURCE_DIR}/cmake/Modules)
 find_package(Eigen3 3.1.2)
 
 option(LIBCONTROL_BUILD_TESTS "Build tests." ON)
-option(LIBCONTROL_BUILD_EXAMPLES "Build examples." ON)
 set(BUILD_SHARED_LIBS ON)
 
 # Set g++ compiler flags if GNU C++ compiler is being used
@@ -35,9 +34,6 @@ if (LIBCONTROL_BUILD_TESTS)
   add_subdirectory(googletest)
 endif()
 
+add_subdirectory(${LIBCONTROL_SOURCE_DIR}/include)
 add_subdirectory(${LIBCONTROL_SOURCE_DIR}/source)
-
-if (LIBCONTROL_BUILD_EXAMPLES)
-  add_subdirectory(examples)
-endif()
 
