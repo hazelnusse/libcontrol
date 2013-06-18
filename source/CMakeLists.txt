@@ -1,5 +1,6 @@
 add_library(control care.cc
                     dare.cc
+                    continuous_to_discrete.cc
                     control_internal_ctrb.cc
                     controllability.cc
                     observability.cc)
