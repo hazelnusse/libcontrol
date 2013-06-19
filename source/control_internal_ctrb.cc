@@ -1,4 +1,4 @@
-#include <unsupported/Eigen/MatrixFunctions>
+// #include <unsupported/Eigen/MatrixFunctions>
 #include "control_internal.h"
 
 namespace control {
@@ -12,9 +12,14 @@ Derived ctrb(const Eigen::MatrixBase<Derived>& A,
   const auto m = B.cols();
 
   Derived result(n, n*m);
+  Derived A_to_the_i = Derived::Identity(n, n);
   result.block(0, 0, n, m) = B;
-  for (int i = 1; i < n; ++i)
-    result.block(0, i*m, n, m) = A.pow(i).eval() * B;
+  for (int i = 1; i < n; ++i) {
+    A_to_the_i *= A;
+    result.block(0, i*m, n, m) = A_to_the_i * B;
+  }
+//  for (int i = 1; i < n; ++i)
+//    result.block(0, i*m, n, m) = A.pow(i).eval() * B;
 
   return result;
 }

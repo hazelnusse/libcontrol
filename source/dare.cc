@@ -4,7 +4,7 @@
 #include <lapacke.h>
 #include <stdexcept>
 #include <string>
-#include <unsupported/Eigen/MatrixFunctions>
+// #include <unsupported/Eigen/MatrixFunctions>
 
 #include "controllability.h"
 #include "dare.h"
@@ -48,15 +48,17 @@ Derived dare(const Eigen::MatrixBase<Derived>& F,
 
   if (!H.isApprox(H.transpose().eval()))
     throw std::invalid_argument("H must be symmetric.");
+  const Derived H_sym = (H + H.transpose()) / 2;    // Force exact symmetry
   
   if (!G2.isApprox(G2.transpose().eval()))
     throw std::invalid_argument("G2 must be symmetric.");
+  const Derived G2_sym = (G2 + G2.transpose()) / 2;   // Force exact symmetry
 
-  Eigen::FullPivHouseholderQR<Derived> dec_H(H);
-  if (!dec_H.isInvertible())
-    throw std::invalid_argument("H must be non-singular.");
+  Eigen::LDLT<Derived> ldlt_H(H_sym);
+  if ((ldlt_H.info() != Eigen::Success) || ldlt_H.isNegative())
+    throw std::invalid_argument("H must positive semi-definite.");
   
-  Eigen::FullPivHouseholderQR<Derived> dec_G2(G2);
+  Eigen::FullPivHouseholderQR<Derived> dec_G2(G2_sym);
   if (!dec_G2.isInvertible())
     throw std::invalid_argument("G2 must be non-singular.");
 
@@ -67,19 +69,19 @@ Derived dare(const Eigen::MatrixBase<Derived>& F,
   if (!control::is_controllable(F, G1)) // actually, only stabilizibility is required
     throw std::invalid_argument("The pair (F, G1) must be controllable.");
   
-  const Derived H_sqrt = H.sqrt();
-  if (!control::is_observable(H_sqrt, F)) // actually, only detectability is required
-    throw std::invalid_argument("The pair (H^(1/2), F) must be observable.");
+  // TODO: Add these checks once matrix power / square root code stabilizes in
+  // Eigen
+//  const Derived H_sqrt = H.pow(0.5);
+//  if (!control::is_observable(H_sqrt, F)) // actually, only detectability is required
+//    throw std::invalid_argument("The pair (H^(1/2), F) must be observable.");
 
+  const Derived G = G1 * dec_G2.solve(G1.transpose());
+  const Derived Finv_t = dec_F.inverse().transpose();
   const auto n = F.rows();
-
-  Derived G = G1 * G2.inverse() * G1.transpose();
-  Derived Finv_t = F.inverse().transpose();
-
   Derived Z(2*n, 2*n);
-  Z.block(0, 0, n, n) = F + G * Finv_t * H;
+  Z.block(0, 0, n, n) = F + G * Finv_t * H_sym;
   Z.block(0, n, n, n) = -G * Finv_t;
-  Z.block(n, 0, n, n) = -Finv_t * H;
+  Z.block(n, 0, n, n) = -Finv_t * H_sym;
   Z.block(n, n, n, n) = Finv_t;
   Derived U(2*n, 2*n);
 
@@ -121,7 +123,7 @@ Derived dare(const Eigen::MatrixBase<Derived>& F,
   Derived U11 = U.block(0, 0, n, n).transpose();
   Derived U21 = U.block(n, 0, n, n).transpose();
   
-  return U11.fullPivHouseholderQr().solve(U21).transpose();
+  return U11.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(U21).transpose();
 }
 
 // Explicit template instantiations for double

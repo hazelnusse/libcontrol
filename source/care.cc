@@ -4,7 +4,9 @@
 #include <lapacke.h>
 #include <stdexcept>
 #include <string>
-#include <unsupported/Eigen/MatrixFunctions>
+#include <Eigen/Dense>
+#include <Eigen/Eigenvalues>
+// #include <unsupported/Eigen/MatrixFunctions>
 
 #include "care.h"
 #include "controllability.h"
@@ -36,36 +38,40 @@ Derived care(const Eigen::MatrixBase<Derived>& F,
   if (G.rows() != F.rows())
     throw std::invalid_argument("F and G must be of same dimensions.");
 
-  if (!G.isApprox(G.transpose().eval()))
-    throw std::invalid_argument("G must be symmetric.");
-
   if (H.rows() != F.rows())
     throw std::invalid_argument("F and H must be of same dimensions.");
 
+  if (!G.isApprox(G.transpose().eval()))
+    throw std::invalid_argument("G must be symmetric.");
+  const Derived G_sym = (G + G.transpose()) / 2;    // Force exact symmetry
+  
+  Eigen::LDLT<Derived> ldlt_G(G_sym);
+  if ((ldlt_G.info() != Eigen::Success) || ldlt_G.isNegative())
+    throw std::invalid_argument("G must positive semi-definite.");
+
   if (!H.isApprox(H.transpose().eval()))
     throw std::invalid_argument("H must be symmetric.");
-  
-  Eigen::FullPivHouseholderQR<Derived> dec_G(G);
-  if (!dec_G.isInvertible())
-    throw std::invalid_argument("G must be non-singular.");
-  
-  Eigen::FullPivHouseholderQR<Derived> dec_H(H);
-  if (!dec_H.isInvertible())
-    throw std::invalid_argument("H must be non-singular.");
+  const Derived H_sym = (H + H.transpose()) / 2;    // Force exact symmetry
 
-  const Derived G_sqrt = G.sqrt();
-  if (!control::is_controllable(F, G_sqrt))     // actually, only stabilizibility is required
-    throw std::invalid_argument("The pair (F, G^(1/2)) must be controllable.");
-  
-  const Derived H_sqrt = H.sqrt();
-  if (!control::is_observable(H_sqrt, F))       // actually, only detectability is required
-    throw std::invalid_argument("The pair (H^(1/2), F) must be observable.");
+  Eigen::LDLT<Derived> ldlt_H(H_sym);
+  if ((ldlt_H.info() != Eigen::Success) || ldlt_H.isNegative())
+    throw std::invalid_argument("H must positive semi-definite.");
+
+  // TODO: Add these checks once matrix power / square root code stabilizes in
+  // Eigen
+//  const Derived G_sqrt = G_sym.pow(0.5).eval();
+//  if (!control::is_controllable(F, G_sqrt))     // actually, only stabilizibility is required
+//    throw std::invalid_argument("The pair (F, G^(1/2)) must be controllable.");
+//   
+//  const Derived H_sqrt = H_sym.pow(0.5).eval();
+//  if (!control::is_observable(H_sqrt, F))       // actually, only detectability is required
+//    throw std::invalid_argument("The pair (H^(1/2), F) must be observable.");
 
   const auto n = F.rows();
   Derived Z(2*n, 2*n);          // Hamiltonian matrix
   Z.block(0, 0, n, n) = F;
-  Z.block(0, n, n, n) = -G;
-  Z.block(n, 0, n, n) = -H;
+  Z.block(0, n, n, n) = -G_sym;
+  Z.block(n, 0, n, n) = -H_sym;
   Z.block(n, n, n, n) = -F.transpose();
 
   // form ordered Schur decomposition of Z
@@ -107,7 +113,7 @@ Derived care(const Eigen::MatrixBase<Derived>& F,
   Derived U11 = U.block(0, 0, n, n).transpose();
   Derived U21 = U.block(n, 0, n, n).transpose();
   
-  return U11.fullPivHouseholderQr().solve(U21).transpose();
+  return U11.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(U21).transpose();
 }
 
 // Explicit template instantiations for double

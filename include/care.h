@@ -18,8 +18,11 @@ namespace control {
  * G = B * R^-1 * B^T
  * H = Q
  *
- * where A, B, and Q are the arguments required by Matlab's care() function,
- * typically care(A, B, Q, R)
+ * Where the equivalent Matlab call would be care(A, B, Q).
+ *
+ * which solves the Ricatti equation
+ *
+ * A ^ T * X + X * A - X * B * B^T * X + Q = 0
  *
  * */
 template <typename Derived>
