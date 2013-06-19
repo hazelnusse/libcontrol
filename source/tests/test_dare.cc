@@ -22,3 +22,28 @@ TEST(DARETest, Simple2d)
   EXPECT_TRUE(X.isApprox(X_matlab));
 }
 
+// From doi://10.1109/TAC.1979.1102178, Example 3
+TEST(DARETest, Laub1979Example3)
+{
+  using Eigen::MatrixXd;
+  MatrixXd A(2, 2);
+  A << 0.9512, 0,
+       0, 0.9048;
+  MatrixXd B(2, 2);
+  B << 4.877, 4.877,
+      -1.1895, 3.569;
+  MatrixXd R(2, 2);
+  R << 1/3., 0,
+          0, 3;
+  MatrixXd Q(2, 2);
+  Q << 0.005, 0,
+       0, 0.02;
+
+  MatrixXd X(2, 2);
+  X = control::dare(A, B, R, Q);
+  MatrixXd X_Laub(2, 2);
+  X_Laub <<  0.010459082320970, 0.003224644477419,
+             0.003224644477419, 0.050397741135643;
+
+  EXPECT_TRUE(X.isApprox(X_Laub));
+}
