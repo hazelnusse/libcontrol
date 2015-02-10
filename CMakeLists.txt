@@ -4,7 +4,7 @@ set(CMAKE_MODULE_PATH ${LIBCONTROL_SOURCE_DIR}/cmake/Modules)
 
 find_package(Eigen3 3.1.2)
 
-option(LIBCONTROL_BUILD_TESTS "Build tests." ON)
+option(LIBCONTROL_BUILD_TESTS "Build tests." OFF)
 set(BUILD_SHARED_LIBS ON)
 
 # Set g++ compiler flags if GNU C++ compiler is being used
